@@ -9,6 +9,8 @@ namespace UniDx
 	 * @file Math.h
 	 * @brief 基本的な数学型 (ベクトル・クォータニオン・行列・色) とユーティリティ関数
 	 */
+	struct Vector3;
+	struct Vector4;
 
 	/** @brief 円周率 (float) */
 	constexpr float PI = 3.141592654f;
@@ -28,7 +30,7 @@ namespace UniDx
 		/** @brief 二乗長さを取得 */
 		float sqrMagnitude() const noexcept { return x * x + y * y; }
 
-		// 単項演算子
+		// 演算子
 		constexpr Vector2 operator+() const noexcept { return *this; }
 		constexpr Vector2 operator-() const noexcept { return Vector2(-x, -y); }
 
@@ -55,6 +57,7 @@ namespace UniDx
 	{
 		constexpr Vector3() noexcept : XMFLOAT3(0.f, 0.f,0.f) {}
 		constexpr Vector3(float ix, float iy, float iz) noexcept : XMFLOAT3(ix, iy, iz) {}
+		constexpr Vector3(Vector2 v, float iz) noexcept : XMFLOAT3(v.x, v.y, iz) {}
 		constexpr explicit Vector3(float ix) noexcept : XMFLOAT3(ix, ix, ix) {}
 		Vector3(const DirectX::XMFLOAT3& V) noexcept : XMFLOAT3(V.x, V.y, V.z) {}
 		explicit Vector3(const DirectX::XMVECTOR& v) { XMStoreFloat3(this, v); }
@@ -70,9 +73,10 @@ namespace UniDx
 			return Vector3(X);
 		}
 
-		// 単項演算子
+		// 演算子
 		constexpr Vector3 operator+() const noexcept { return *this; }
 		constexpr Vector3 operator-() const noexcept { return Vector3(-x, -y, -z); }
+		constexpr explicit operator Vector2() const noexcept { return Vector2(x, y); }
 
 		static const Vector3 zero;
 		static const Vector3 one;
@@ -130,16 +134,22 @@ namespace UniDx
 	{
 		constexpr Vector4() noexcept : XMFLOAT4(0.f, 0.f, 0.f, 0.f) {}
 		constexpr Vector4(float ix, float iy, float iz, float iw) noexcept : XMFLOAT4(ix, iy, iz, iw) {}
+		constexpr Vector4(Vector2 v, float iz, float iw) noexcept : XMFLOAT4(v.x, v.y, iz, iw) {}
+		constexpr Vector4(Vector3 v, float iw) noexcept : XMFLOAT4(v.x, v.y, v.z, iw) {}
 		constexpr explicit Vector4(float ix) noexcept : XMFLOAT4(ix, ix, ix, ix) {}
 		Vector4(const DirectX::XMFLOAT4& V) noexcept : XMFLOAT4(V.x, V.y, V.z, V.w) {}
 		explicit Vector4(const DirectX::XMVECTOR& v) { XMStoreFloat4(this, v); }
+		/** @brief 長さを取得 */
+		float magnitude() const noexcept { return std::sqrt((x * x) + (y * y) + (z * z) + (w * w)); }
 
 		static const Vector4 zero;
 		static const Vector4 one;
 
-		// 単項演算子
+		// 演算子
 		constexpr Vector4 operator+() const noexcept { return *this; }
 		constexpr Vector4 operator-() const noexcept { return Vector4(-x, -y, -z, -w); }
+		constexpr explicit operator Vector2() const noexcept { return Vector2(x, y); }
+		constexpr explicit operator Vector3() const noexcept { return Vector3(x, y, z); }
 	};
 	[[nodiscard]] inline Vector4 Min(const Vector4& v1, const Vector4& v2) noexcept
 	{
@@ -159,6 +169,7 @@ namespace UniDx
 		constexpr Quaternion(float ix, float iy, float iz, float iw) noexcept : x(ix), y(iy), z(iz), w(iw) {}
 		Quaternion(const DirectX::XMFLOAT4& V) noexcept : x(V.x), y(V.y), z(V.z), w(V.w) {}
 		explicit Quaternion(const DirectX::XMVECTOR& v) { DirectX::XMStoreFloat4(reinterpret_cast<DirectX::XMFLOAT4*>(this), v); }
+		float magnitude() const noexcept { return std::sqrt((x * x) + (y * y) + (z * z) + (w * w)); }
 
 		const DirectX::XMVECTOR XMLoad() const
 		{
@@ -300,6 +311,7 @@ namespace UniDx
 		float m30, m31, m32, m33;
 
 		static const Matrix4x4 identity;
+		static const Matrix4x4 zFlip;
 
 		Matrix4x4() : m00(0.f), m01(0.f), m02(0.f), m03(0.f),
 					  m10(0.f), m11(0.f), m12(0.f), m13(0.f),
@@ -365,6 +377,10 @@ namespace UniDx
 			const XMVECTOR X = XMVector3TransformNormal(v1, M);
 			return Vector3(X);
 		}
+		float Determinant() const noexcept
+		{
+			return DirectX::XMVectorGetX(DirectX::XMMatrixDeterminant(XMLoad()));
+		}
 
 		const DirectX::XMMATRIX XMLoad() const
 		{
@@ -374,7 +390,11 @@ namespace UniDx
 		{
 			XMStoreFloat4x4(reinterpret_cast<DirectX::XMFLOAT4X4*>(this), mtx);
 		}
-
+		/** @brief ベクトルからスケール行列を生成 */
+		static Matrix4x4 Scale(const Vector3& scales) noexcept
+		{
+			return Matrix4x4(DirectX::XMMatrixScaling(scales.x, scales.y, scales.z));
+		}
 		/** @brief クォータニオンから回転行列を生成 */
 		static Matrix4x4 Rotate(const Quaternion& rotation) noexcept
 		{
@@ -386,6 +406,16 @@ namespace UniDx
 		static Matrix4x4 Translate(const Vector3& position) noexcept
 		{
 			return Matrix4x4(DirectX::XMMatrixTranslation(position.x, position.y, position.z));
+		}
+		/** @brief 列思考の4x4行列データから行列を生成 */
+		template<typename T>
+		static Matrix4x4 FromColumnMajor16(const T* a)
+		{
+			return Matrix4x4(
+				float(a[0]), float(a[4]), float(a[8]),  float(a[12]),
+				float(a[1]), float(a[5]), float(a[9]),  float(a[13]),
+				float(a[2]), float(a[6]), float(a[10]), float(a[14]),
+				float(a[3]), float(a[7]), float(a[11]), float(a[15]) );
 		}
 
 		// 単項演算子
@@ -522,11 +552,11 @@ namespace UniDx
 	inline Vector3 operator*(const DirectX::XMFLOAT3& v, const Matrix4x4& m) noexcept
 	{ return m.MultiplyPoint(v); }
 
-	/** @brief 各型の文字列化（ワイド文字列） */
-	inline std::wstring ToString(const Vector2& v) { return ToString(DirectX::XMFLOAT2(v)); }
-	inline std::wstring ToString(const Vector3& v) { return ToString(DirectX::XMFLOAT3(v)); }
-	inline std::wstring ToString(const Vector4& v) { return ToString(DirectX::XMFLOAT4(v)); }
-	inline std::wstring ToString(const Color& v) { return ToString(DirectX::XMFLOAT4(v)); }
-	inline std::wstring ToString(const Quaternion& v) { return ToString(DirectX::XMFLOAT4(v)); }
+	/** @brief 各型の文字列化 */
+	inline u8string ToString(const Vector2& v) { return ToString(DirectX::XMFLOAT2(v)); }
+	inline u8string ToString(const Vector3& v) { return ToString(DirectX::XMFLOAT3(v)); }
+	inline u8string ToString(const Vector4& v) { return ToString(DirectX::XMFLOAT4(v)); }
+	inline u8string ToString(const Color& v)   { return ToString(DirectX::XMFLOAT4(v)); }
+	inline u8string ToString(const Quaternion& v) { return ToString(DirectX::XMFLOAT4(v)); }
 
 } // namespace UniDx

@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include <UniDx/PlayerLoop.h>
 
-#include <string>
 #include <chrono>
 
 #include <UniDx/D3DManager.h>

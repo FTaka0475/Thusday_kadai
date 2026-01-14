@@ -1,7 +1,7 @@
 // ----------------------------------------------------------
 // 頂点
 // ----------------------------------------------------------
-cbuffer VSConstants : register(b0)
+cbuffer CBPerCamera : register(b0)
 {
     float4x4 world;
     float4x4 view;
@@ -12,7 +12,7 @@ cbuffer VSConstants : register(b0)
 struct VSInput
 {
     float3 pos : POSITION;
-    float2 uv : TEXUV;
+    float2 uv : TEXCOORD0;
     float4 color : COLOR0;
 };
 

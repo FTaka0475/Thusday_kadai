@@ -13,28 +13,6 @@ using namespace UniDx;
 
 namespace
 {
-    void debugNode(GameObject* p, wstring head)
-    {
-        wstring str = head;
-        str.append(p->name);
-        Debug::Log(str);
-        str = head;
-        str.append( std::to_wstring(p->transform->position.get().y));
-        Debug::Log(str);
-        str = head + L" ";
-        for (int i = 0; i < p->transform->childCount(); ++i)
-        {
-            debugNode(p->transform->GetChild(i)->gameObject, str);
-        }
-    }
-
-    const wchar_t* PartsName[] =
-    {
-        L"LeftShoulder",
-        L"RightShoulder",
-        L"LeftUpperLeg",
-        L"RightUpperLeg"
-    };
 }
 
 
@@ -44,18 +22,8 @@ void Player::OnEnable()
     assert(rb != nullptr);
 
     rb->gravityScale = 1.5f;
-    GetComponent<Collider>(true)->bounciness = 0.0f;
-
-    for (int i = 0; i < (int)Parts::Max; ++i)
-    {
-        GameObject * o = gameObject->Find([i](GameObject* p) { return p->name.get() == PartsName[i]; });
-        if (o != nullptr)
-        {
-            parts[i] = o->transform;
-            Debug::Log(parts[i]->name.get());
-        }
-    }
     animFrame = 0.0f;
+    GetComponent<Collider>(true)->bounciness = 0.0f;
 }
 
 
@@ -126,7 +94,7 @@ void Player::OnTriggerExit(Collider* other)
 
 void Player::OnCollisionEnter(const Collision& collision)
 {
-    if (collision.collider->name.get() == L"Coin")
+    if (collision.collider->name == StringId::intern("Coin"))
     {
         MainGame::getInstance()->AddScore(1);
         Destroy(collision.collider->gameObject);

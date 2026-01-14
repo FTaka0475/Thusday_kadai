@@ -1,8 +1,12 @@
 ﻿#pragma once
 
 #include "UniDxDefine.h"
+#include "BoneMath.h"
 
 namespace UniDx {
+
+// スキンメッシュに使うボーンの最大値
+constexpr int SkinMeshBoneMax = 256;
 
 // UniDxで使用する定数バッファのスロット番号
 // すべてのシェーダーはこの番号に従って指定する
@@ -36,7 +40,7 @@ struct ConstantBufferPerCamera
     Vector4   time;       // (t, dt, 1/dt, frameCount)
 };
 /* HLSL
-cbuffer VSConstants : register(b8)
+cbuffer CBPerCamera : register(b8)
 {
     float4x4 view;
     float4x4 projection;
@@ -56,9 +60,22 @@ struct ConstantBufferPerObject
     Matrix4x4 world;
 };
 /* HLSL
-cbuffer VSConstants : register(b9)
+cbuffer CBPerObject : register(b9)
 {
     float4x4 world;
+};
+*/
+struct ConstantBufferSkinPerObject
+{
+    Matrix4x4 world;
+    BoneMat3x4 bones[SkinMeshBoneMax];
+//    Matrix4x4 bones[SkinMeshBoneMax];
+};
+/* HLSL
+cbuffer CBSkinPerObject : register(b9)
+{
+    float4x4 world;
+    BoneMat3x4 bones[256];
 };
 */
 
@@ -70,7 +87,7 @@ struct ConstantBufferPerMaterial
     Color baseColor;
 };
 /* HLSL
-cbuffer PSConstants : register(b10)
+cbuffer CBPerMaterial : register(b10)
 {
     float4 baseColor;
 };
@@ -87,7 +104,7 @@ struct ConstantBufferLightPerFrame
     uint32_t pad;
 };
 /* HLSL
-cbuffer LightPerFrame : register(b11)
+cbuffer CBLightPerFrame : register(b11)
 {
     float4 ambientColor;
     float4 directionalColor;
@@ -138,7 +155,7 @@ struct SpotLight
     float3 directionW;
     float outerCos;
 };
-cbuffer LightPerObject : register(b12)
+cbuffer CBLightPerObject : register(b12)
 {
     PointLight pointLights[8]; // 最大8個
     SpotLight spotLights[8];   // 最大8個

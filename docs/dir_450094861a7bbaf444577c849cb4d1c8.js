@@ -2,6 +2,7 @@ var dir_450094861a7bbaf444577c849cb4d1c8 =
 [
     [ "AnimationCurve.h", "_animation_curve_8h.html", "_animation_curve_8h" ],
     [ "Behaviour.h", "_behaviour_8h.html", "_behaviour_8h" ],
+    [ "BoneMath.h", "_bone_math_8h.html", "_bone_math_8h" ],
     [ "Bounds.h", "_bounds_8h.html", "_bounds_8h" ],
     [ "Camera.h", "_camera_8h.html", "_camera_8h" ],
     [ "Canvas.h", "_canvas_8h.html", "_canvas_8h" ],
@@ -35,12 +36,14 @@ var dir_450094861a7bbaf444577c849cb4d1c8 =
     [ "SceneManager.h", "_scene_manager_8h.html", "_scene_manager_8h" ],
     [ "Shader.h", "_shader_8h.html", "_shader_8h" ],
     [ "Singleton.h", "_singleton_8h.html", "_singleton_8h" ],
+    [ "SkinnedMeshRenderer.h", "_skinned_mesh_renderer_8h.html", "_skinned_mesh_renderer_8h" ],
     [ "Sphere.h", "_sphere_8h.html", "_sphere_8h" ],
+    [ "StringId.h", "_string_id_8h.html", "_string_id_8h" ],
     [ "TextMesh.h", "_text_mesh_8h.html", "_text_mesh_8h" ],
     [ "Texture.h", "_texture_8h.html", "_texture_8h" ],
     [ "Time.h", "_time_8h.html", "_time_8h" ],
     [ "Transform.h", "_transform_8h.html", "_transform_8h" ],
     [ "UIBehaviour.h", "_u_i_behaviour_8h.html", "_u_i_behaviour_8h" ],
-    [ "UniDx.h", "_uni_dx_2_uni_dx_8h.html", "_uni_dx_2_uni_dx_8h" ],
+    [ "UniDx.h", "_uni_dx_2_uni_dx_8h.html", null ],
     [ "UniDxDefine.h", "_uni_dx_define_8h.html", "_uni_dx_define_8h" ]
 ];

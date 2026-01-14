@@ -2,10 +2,10 @@
 // 頂点
 // ----------------------------------------------------------
 // カメラ定数バッファ
-cbuffer VSConstants : register(b8)
+cbuffer CBPerCamera : register(b8)
 {
-    float4x4 view;
-    float4x4 projection;
+    row_major float4x4 view;
+    row_major float4x4 projection;
     float3 cameraPosW;
     float cameraNear;
     float3 cameraForwardW;
@@ -13,7 +13,8 @@ cbuffer VSConstants : register(b8)
     float4 time; // (t, dt, 1/dt, frameCount)
 };
 
-cbuffer VSConstants : register(b9)
+// オブジェクト定数バッファ
+cbuffer CBPerObject : register(b9)
 {
     float4x4 world;
 };
@@ -22,7 +23,7 @@ cbuffer VSConstants : register(b9)
 struct VSInput
 {
     float3 pos : POSITION;
-    float2 uv : TEXUV;
+    float2 uv : TEXCOORD0;
 };
 
 
@@ -38,9 +39,9 @@ PSInput VS(VSInput vin)
 {
     PSInput Out;
     float4 p = float4(vin.pos.xyz, 1);
-    p = mul(world, p);
-    p = mul(view, p);
-    p = mul(projection, p);
+    p = mul(p, world);
+    p = mul(p, view);
+    p = mul(p, projection);
     Out.pos = p;
     Out.uv = vin.uv;
     return Out;

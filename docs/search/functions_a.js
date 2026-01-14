@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['magnitude_0',['magnitude',['../struct_uni_dx_1_1_vector3.html#a8d6abe090014e8d1aa6fc032b6c29e04',1,'UniDx::Vector3']]],
+  ['magnitude_0',['magnitude',['../struct_uni_dx_1_1_vector3.html#a8d6abe090014e8d1aa6fc032b6c29e04',1,'UniDx::Vector3::magnitude()'],['../struct_uni_dx_1_1_vector4.html#ac8aba8b8961f763f4fc83220e77d74fd',1,'UniDx::Vector4::magnitude()'],['../struct_uni_dx_1_1_quaternion.html#a52e199cc31ae88e981324667c58c4fcd',1,'UniDx::Quaternion::magnitude()']]],
   ['mainloop_1',['MainLoop',['../class_uni_dx_1_1_player_loop.html#a2937a9802d6521c05c8c900487e54602',1,'UniDx::PlayerLoop']]],
   ['makememberaction_2',['MakeMemberAction',['../namespace_uni_dx.html#ab2cee7cf33d835d7f1b38112e6774b7c',1,'UniDx']]],
   ['makememberfunc_3',['MakeMemberFunc',['../namespace_uni_dx.html#a0709857b4cce35af54f3d09f213e9b90',1,'UniDx']]],
@@ -15,13 +15,5 @@ var searchData=
   ['moveposition_12',['MovePosition',['../class_uni_dx_1_1_rigidbody.html#aa41c5abc3a789f1522a5c52e3264c383',1,'UniDx::Rigidbody']]],
   ['moverotation_13',['MoveRotation',['../class_uni_dx_1_1_rigidbody.html#aa5d993c2de14271b1107e797936267b6',1,'UniDx::Rigidbody']]],
   ['multiplypoint_14',['MultiplyPoint',['../struct_uni_dx_1_1_matrix4x4.html#a8afecc04295ac993bec4448f9de97f8c',1,'UniDx::Matrix4x4']]],
-  ['multiplyvector_15',['MultiplyVector',['../struct_uni_dx_1_1_matrix4x4.html#a851001cfb1e2eb4b9a269e37137fff93',1,'UniDx::Matrix4x4']]],
-  ['mutablecolors_16',['mutableColors',['../struct_uni_dx_1_1_owned_sub_mesh.html#a8b9db6b493ad0db68b940601f5476a22',1,'UniDx::OwnedSubMesh']]],
-  ['mutableindices_17',['mutableIndices',['../struct_uni_dx_1_1_owned_sub_mesh.html#a0e6841c6c202657553c2c1cafa9001a4',1,'UniDx::OwnedSubMesh']]],
-  ['mutablenormals_18',['mutableNormals',['../struct_uni_dx_1_1_owned_sub_mesh.html#acfef07036aae0f3e58a95f4274a40c72',1,'UniDx::OwnedSubMesh']]],
-  ['mutablepositions_19',['mutablePositions',['../struct_uni_dx_1_1_owned_sub_mesh.html#a481f5ee36eba6cbc59b12ffa805d474e',1,'UniDx::OwnedSubMesh']]],
-  ['mutableuv_20',['mutableUV',['../struct_uni_dx_1_1_owned_sub_mesh.html#a315149c755cd4c86b10544d16b99fc9e',1,'UniDx::OwnedSubMesh']]],
-  ['mutableuv2_21',['mutableUV2',['../struct_uni_dx_1_1_owned_sub_mesh.html#abbeccb58204fea9a68696ca710dd9ed1',1,'UniDx::OwnedSubMesh']]],
-  ['mutableuv3_22',['mutableUV3',['../struct_uni_dx_1_1_owned_sub_mesh.html#a04a104d8780ea6370934512f9f30054f',1,'UniDx::OwnedSubMesh']]],
-  ['mutableuv4_23',['mutableUV4',['../struct_uni_dx_1_1_owned_sub_mesh.html#af101f4e7505e8e5f2b8d4ffc6fdb4d7b',1,'UniDx::OwnedSubMesh']]]
+  ['multiplyvector_15',['MultiplyVector',['../struct_uni_dx_1_1_matrix4x4.html#a851001cfb1e2eb4b9a269e37137fff93',1,'UniDx::Matrix4x4']]]
 ];

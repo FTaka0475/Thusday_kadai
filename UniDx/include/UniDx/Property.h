@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <functional>
+#include "UniDxDefine.h"
 
 /**
  * @file Property.h
@@ -92,5 +93,11 @@ public:
 private:
     Setter setter_;
 };
+
+template<typename T>
+inline u8string ToString(const ReadOnlyProperty<T>& v) { return ToString(v.get()); }
+template<typename T>
+inline u8string ToString(const Property<T>& v) { return ToString(v.get()); }
+
 
 }

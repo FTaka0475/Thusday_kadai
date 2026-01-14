@@ -3,6 +3,7 @@
 
 #include <tiny_gltf.h>
 #include <codecvt>
+#include <algorithm>
 
 
 namespace UniDx{
@@ -16,6 +17,7 @@ template<typename T>
 void ReadAccessorData(
     const tinygltf::Model& model,
     const tinygltf::Accessor& accessor,
+    bool xflip,
     vector<T>& out)
 {
     if (accessor.bufferView < 0) return;
@@ -26,44 +28,135 @@ void ReadAccessorData(
     const unsigned char* data = buffer.data.data() + offset;
     out.resize(count);
 
+    size_t stride = bufferView.byteStride;
+    if(stride == 0)
+    {
+        stride = accessor.ByteStride(bufferView);
+    }
+
     // 型チェック
     if constexpr (is_same_v<T, Vector3>) {
         assert(accessor.type == TINYGLTF_TYPE_VEC3);
         assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
         for (size_t i = 0; i < count; ++i) {
-            const float* v = reinterpret_cast<const float*>(data + i * bufferView.byteStride);
-            out[i] = Vector3(v[0], v[1], v[2]);
+            const float* v = reinterpret_cast<const float*>(data + i * stride);
+            out[i] = Vector3(xflip ? -v[0] : v[0], v[1], v[2]);
         }
     }
     else if constexpr (is_same_v<T, Vector2>) {
         assert(accessor.type == TINYGLTF_TYPE_VEC2);
         assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
         for (size_t i = 0; i < count; ++i) {
-            const float* v = reinterpret_cast<const float*>(data + i * bufferView.byteStride);
+            const float* v = reinterpret_cast<const float*>(data + i * stride);
             out[i] = Vector2(v[0], v[1]);
+        }
+    }
+    else if constexpr(is_same_v<T, Vector4>) {
+        assert(accessor.type == TINYGLTF_TYPE_VEC4);
+        assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+        for(size_t i = 0; i < count; ++i) {
+            const float* v = reinterpret_cast<const float*>(data + i * stride);
+            out[i] = Vector4(xflip ? -v[0] : v[0], v[1], v[2], xflip ? -v[3] : v[3]);
         }
     }
     else if constexpr (is_same_v<T, Color>) {
         // glTFのCOLOR_0はfloat4またはubyte4
         if (accessor.type == TINYGLTF_TYPE_VEC3 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
             for (size_t i = 0; i < count; ++i) {
-                const float* v = reinterpret_cast<const float*>(data + i * bufferView.byteStride);
+                const float* v = reinterpret_cast<const float*>(data + i * stride);
                 out[i] = Color(v[0], v[1], v[2], 1.0f);
             }
         }
         else if (accessor.type == TINYGLTF_TYPE_VEC4 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT) {
             for (size_t i = 0; i < count; ++i) {
-                const float* v = reinterpret_cast<const float*>(data + i * bufferView.byteStride);
+                const float* v = reinterpret_cast<const float*>(data + i * stride);
                 out[i] = Color(v[0], v[1], v[2], v[3]);
             }
         }
         else if (accessor.type == TINYGLTF_TYPE_VEC4 && accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE) {
             for (size_t i = 0; i < count; ++i) {
-                const uint8_t* v = reinterpret_cast<const uint8_t*>(data + i * bufferView.byteStride);
+                const uint8_t* v = reinterpret_cast<const uint8_t*>(data + i * stride);
                 out[i] = Color(
                     v[0] / 255.0f, v[1] / 255.0f, v[2] / 255.0f, v[3] / 255.0f);
             }
         }
+    }
+}
+template<typename TU8x4>
+void ReadAccessorU8x4(
+    const tinygltf::Model& model,
+    const tinygltf::Accessor& accessor,
+    vector<TU8x4>& out,
+    bool isWeights)
+{
+    static_assert(std::tuple_size<TU8x4>::value == 4, "TU8x4 must be 4 elements");
+
+    if(accessor.bufferView < 0) return;
+    const auto& bufferView = model.bufferViews[accessor.bufferView];
+    const auto& buffer = model.buffers[bufferView.buffer];
+    const size_t offset = bufferView.byteOffset + accessor.byteOffset;
+    const size_t count = accessor.count;
+    const unsigned char* data = buffer.data.data() + offset;
+    out.resize(count);
+
+    size_t stride = bufferView.byteStride;
+    if(stride == 0) stride = accessor.ByteStride(bufferView);
+
+    assert(accessor.type == TINYGLTF_TYPE_VEC4);
+
+    auto ClampU8 = [](int v) -> uint8_t {
+        if(v < 0) return 0;
+        if(v > 255) return 255;
+        return static_cast<uint8_t>(v);
+        };
+
+    for(size_t i = 0; i < count; ++i)
+    {
+        TU8x4 v{};
+
+        const uint8_t* p = reinterpret_cast<const uint8_t*>(data + i * stride);
+
+        if(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE)
+        {
+            for(int k = 0; k < 4; ++k)
+            {
+                const uint8_t raw = p[k];
+                // weights: normalized u8 でも raw はそのまま 0..255
+                v[k] = raw;
+            }
+        }
+        else if(accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+        {
+            const uint16_t* u16 = reinterpret_cast<const uint16_t*>(p);
+            for(int k = 0; k < 4; ++k)
+            {
+                const uint16_t raw = u16[k];
+                if(isWeights && accessor.normalized)
+                {
+                    const int w = static_cast<int>(std::lround((raw / 65535.0) * 255.0));
+                    v[k] = ClampU8(w);
+                }
+                else
+                {
+                    // joints or non-normalized weights
+                    v[k] = ClampU8(static_cast<int>(raw));
+                }
+            }
+        }
+        else if(isWeights && accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
+        {
+            const float* f = reinterpret_cast<const float*>(p);
+            for(int k = 0; k < 4; ++k)
+            {
+                const int w = static_cast<int>(std::lround(std::clamp(f[k], 0.0f, 1.0f) * 255.0f));
+                v[k] = ClampU8(w);
+            }
+        }
+        else
+        {
+            v = TU8x4{ 0,0,0,0 };
+        }
+        out[i] = v;
     }
 }
 
@@ -75,7 +168,7 @@ void ReadAccessorData(
 // -----------------------------------------------------------------------------
 // gltfファイルを読み込み
 // -----------------------------------------------------------------------------
-bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::shared_ptr<Shader> shader)
+bool GltfModel::load_(const char* filePath, bool makeTextureMaterial, std::shared_ptr<Shader> shader)
 {
     Debug::Log(filePath);
 
@@ -83,9 +176,7 @@ bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::sh
     tinygltf::TinyGLTF loader;
     string err, warn;
 
-    auto path = ToUtf8(filePath);
-
-    bool ok = loader.LoadBinaryFromFile(model.get(), &err, &warn, path.c_str());
+    bool ok = loader.LoadBinaryFromFile(model.get(), &err, &warn, filePath);
     if (!warn.empty())
     {
         Debug::Log(warn);
@@ -104,59 +195,75 @@ bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::sh
         auto mesh = make_shared<Mesh>();
         for (const auto& primitive : gltfMesh.primitives)
         {
-            auto sub = make_shared<OwnedSubMesh>();
+            auto sub = make_shared<SkinedSubMesh>();
 
             // POSITION
             if (auto it = primitive.attributes.find("POSITION"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizePositions(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector3>&>(sub->mutablePositions()));
+                ReadAccessorData(*model, accessor, true, sub->positionsData);
             }
 
             // NORMAL
             if (auto it = primitive.attributes.find("NORMAL"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeNormals(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector3>&>(sub->mutableNormals()));
+                ReadAccessorData(*model, accessor, true, sub->normalsData);
+            }
+            // TANGENT glTF: xyz=tangent, w=bitangent sign
+            if(auto it = primitive.attributes.find("TANGENT"); it != primitive.attributes.end()) {
+                const auto& accessor = model->accessors[it->second];
+                sub->tangentsData.resize(accessor.count);
+                ReadAccessorData(*model, accessor, true, sub->tangentsData);
             }
 
             // COLOR_0
             if (auto it = primitive.attributes.find("COLOR_0"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeColors(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Color>&>(sub->mutableColors()));
+                ReadAccessorData(*model, accessor, false, sub->colorsData);
             }
 
             // TEXCOORD_0
             if (auto it = primitive.attributes.find("TEXCOORD_0"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeUV(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector2>&>(sub->mutableUV()));
+                ReadAccessorData(*model, accessor, false, sub->uvData);
             }
             // TEXCOORD_1
             if (auto it = primitive.attributes.find("TEXCOORD_1"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeUV2(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector2>&>(sub->mutableUV2()));
+                ReadAccessorData(*model, accessor, false, sub->uv2Data);
             }
             // TEXCOORD_2
             if (auto it = primitive.attributes.find("TEXCOORD_2"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeUV3(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector2>&>(sub->mutableUV3()));
+                ReadAccessorData(*model, accessor, false, sub->uv3Data);
             }
             // TEXCOORD_3
             if (auto it = primitive.attributes.find("TEXCOORD_3"); it != primitive.attributes.end()) {
                 const auto& accessor = model->accessors[it->second];
                 sub->resizeUV4(accessor.count);
-                ReadAccessorData(*model, accessor, const_cast<vector<Vector2>&>(sub->mutableUV4()));
+                ReadAccessorData(*model, accessor, false, sub->uv4Data);
+            }
+
+            // JOINTS_0 / WEIGHTS_0 (skinning)
+            if(auto it = primitive.attributes.find("JOINTS_0"); it != primitive.attributes.end()) {
+                const auto& accessor = model->accessors[it->second];
+                ReadAccessorU8x4(*model, accessor, sub->jointsData, /*isWeights*/false);
+            }
+            if(auto it = primitive.attributes.find("WEIGHTS_0"); it != primitive.attributes.end()) {
+                const auto& accessor = model->accessors[it->second];
+                ReadAccessorU8x4(*model, accessor, sub->weightsData, /*isWeights*/true);
             }
 
             // indices
             if (primitive.indices >= 0) {
                 const auto& accessor = model->accessors[primitive.indices];
                 sub->resizeIndices(accessor.count);
-                auto& indices = const_cast<std::vector<uint32_t>&>(sub->mutableIndices());
+                auto& indices = sub->indicesData;
 
                 const auto& bufferView = model->bufferViews[accessor.bufferView];
                 const auto& buffer = model->buffers[bufferView.buffer];
@@ -179,6 +286,12 @@ bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::sh
                         indices[i] = data[i];
                     }
                 }
+
+                for(size_t i = 0; i + 2 < accessor.count; i += 3)
+                {
+                    // 座標系の反転で表裏が変わるので、インデクスを入れ替え
+                    std::swap(indices[i + 1], indices[i + 2]);
+                }
             }
 
             sub->topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -195,6 +308,7 @@ bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::sh
             const auto& gltfMat = model->materials[i];
             auto material = std::make_shared<Material>();
             material->shader = shader;
+            material->cullMode = gltfMat.doubleSided ? D3D11_CULL_NONE : D3D11_CULL_BACK;
 
             // glTF 内包テクスチャ（まずは baseColorTexture のみ対応）
             const int texIndex = gltfMat.pbrMetallicRoughness.baseColorTexture.index;
@@ -213,11 +327,52 @@ bool GltfModel::load_(const wstring& filePath, bool makeTextureMaterial, std::sh
     }
 
     // ノードから階層構造を作りながら姿勢を取得
+    nodes.clear();
+    renderer.clear();
     int sceneIndex = model->defaultScene >= 0 ? model->defaultScene : 0;
     const auto& scene = model->scenes[sceneIndex];
     for (int nodeIndex : scene.nodes)
     {
         createNodeRecursive(*model.get(), nodeIndex, gameObject, makeTextureMaterial);
+    }
+
+    // スキン情報の後処理
+    for(auto& pair : skinInstance)
+    {
+        // スキンのジョイントに対応するノードのTransformを入れる
+        auto& skin = model->skins[pair.first];
+        pair.second.joints.resize(skin.joints.size(), nullptr);
+        for(int i = 0; i < skin.joints.size(); ++i)
+        {
+            pair.second.joints[i] = nodes[skin.joints[i]];
+        }
+
+        // スキンに対する逆バインド行列を取得
+        int accIndex = skin.inverseBindMatrices;
+        if(0 <= accIndex && accIndex < model->accessors.size())
+        {
+            const tinygltf::Accessor& acc = model->accessors[accIndex];
+            if(acc.type != TINYGLTF_TYPE_MAT4) continue;
+            if(acc.componentType != TINYGLTF_COMPONENT_TYPE_FLOAT) continue;
+
+            const tinygltf::BufferView& bv = model->bufferViews[acc.bufferView];
+            const tinygltf::Buffer& buf = model->buffers[bv.buffer];
+            const uint8_t* base = buf.data.data() + bv.byteOffset + acc.byteOffset;
+            size_t stride = acc.ByteStride(bv);
+            if(stride < sizeof(float) * 16) continue;
+
+            pair.second.inverseBind.resize(acc.count);
+            for(int i = 0; i < acc.count; ++i)
+            {
+                const uint8_t* p = base + i * stride;
+                Matrix4x4 localRH;
+
+                // glTFは列優先行列で最初が１列、UniDxは行優先行列で最初が１行なので、結果的に順番コピーでOK
+                std::memcpy(&localRH, p, sizeof(float) * 16);
+
+                pair.second.inverseBind[i] = Matrix4x4::zFlip * localRH * Matrix4x4::zFlip;
+            }
+        }
     }
     return true;
 }
@@ -289,7 +444,7 @@ std::shared_ptr<Texture> GltfModel::GetOrCreateTextureFromGltf_(int textureIndex
     {
         return nullptr;
     }
-    outTex->setName(UniDx::ToUtf16(img.name));
+    outTex->setName(StringId::intern(img.name));
 
     return outTex;
 }
@@ -308,29 +463,40 @@ void GltfModel::createNodeRecursive(const tinygltf::Model& model,
 
     // GameObject を作成
     unique_ptr<GameObject> go = make_unique<GameObject>();
-    go->SetName(UniDx::ToUtf16(node.name));
+    go->SetName(StringId::intern(node.name));
+//    Debug::Log(go->name.get());
 
     // 行列を取得
-    Vector3 position;
-    Vector3 scale;
-    Quaternion rotation;
+    Matrix4x4 localRH;
     if (!node.matrix.empty())
     {
         // 4x4行列が直接指定されている場合は
-        // どちらも列優先なので、順番にコピー
-        Matrix4x4 matrix;
+        // glTFは列優先行列で最初が１列、UniDxは行優先行列で最初が１行なので、結果的に順番コピーでOK
         for (int i = 0; i < 16; ++i)
         {
-            reinterpret_cast<float*>(&matrix)[i] = static_cast<float>(node.matrix[i]);
+            reinterpret_cast<float*>(&localRH)[i] = static_cast<float>(node.matrix[i]);
         }
-        matrix.Decompose(scale, rotation, position);
+        localRH = Matrix4x4::FromColumnMajor16(node.matrix.data());
     }
     else {
-        // translation/rotation/scaleから合成
-        position = node.translation.size() == 3 ? Vector3((float)node.translation[0], (float)node.translation[1], (float)node.translation[2]) : Vector3::zero;
-        rotation = node.rotation.size() == 4 ? Quaternion((float)node.rotation[0], (float)node.rotation[1], (float)node.rotation[2], (float)node.rotation[3]) : Quaternion::identity;
-        scale = node.scale.size() == 3 ? Vector3((float)node.scale[0], (float)node.scale[1], (float)node.scale[2]) : Vector3::one;
+        Vector3 tRH, sRH;
+        Quaternion rRH;
+        tRH = node.translation.size() == 3 ? Vector3((float)node.translation[0], (float)node.translation[1], (float)node.translation[2]) : Vector3::zero;
+        rRH = node.rotation.size() == 4 ? Quaternion((float)node.rotation[0], (float)node.rotation[1], (float)node.rotation[2], (float)node.rotation[3]) : Quaternion::identity;
+        sRH = node.scale.size() == 3 ? Vector3((float)node.scale[0], (float)node.scale[1], (float)node.scale[2]) : Vector3::one;
+
+        // Matrix4x4 は SimpleMath::Matrix とレイアウト互換なので代入でOK（Transform.cpp と同じ）
+        localRH = Matrix4x4::Scale(sRH) * Matrix4x4::Rotate(rRH) * Matrix4x4::Translate(tRH);
     }
+
+    // RH -> LH 変換（行ベクトル規約でも同じ「C*M*C」でOK）
+    Matrix4x4 localLH = Matrix4x4::zFlip * localRH * Matrix4x4::zFlip;
+
+    Vector3 position;
+    Vector3 scale;
+    Quaternion rotation;
+    localLH.Decompose(scale, rotation, position);
+
     go->transform->localScale = scale;
     go->transform->localRotation = rotation;
     go->transform->localPosition = position;
@@ -338,7 +504,22 @@ void GltfModel::createNodeRecursive(const tinygltf::Model& model,
     // メッシュを持っていればアタッチ
     if (node.mesh >= 0 && node.mesh < meshes.size())
     {
-        auto* r = go->AddComponent<MeshRenderer>();
+        // メッシュレンダラーを作成
+        MeshRenderer* r;
+
+        if(0 <= node.skin && node.skin < model.skins.size())
+        {
+            // スキニングメッシュ
+            SkinnedMeshRenderer* sr = go->AddComponent<SkinnedMeshRenderer>();
+            skinInstance[node.skin].reference.push_back(sr);
+            sr->skin = &skinInstance[node.skin];
+            r = sr;
+        }
+        else
+        {
+            // 固定メッシュ
+            r = go->AddComponent<MeshRenderer>();
+        }
         renderer.push_back(r);
         r->mesh = *meshes[node.mesh]; // メッシュのコピー
 
@@ -369,6 +550,7 @@ void GltfModel::createNodeRecursive(const tinygltf::Model& model,
     {
         Transform::SetParent(move(go), parentGO->transform);
     }
+    nodes[nodeIndex] = ptr->transform;
 
     // 子ノードを再帰
     for (int child : node.children)
@@ -383,6 +565,8 @@ void GltfModel::createNodeRecursive(const tinygltf::Model& model,
 // -----------------------------------------------------------------------------
 void GltfModel::SetAddressModeUV(Texture* texture, int texIndex) const
 {
+    if(model->textures.size() <= texIndex) return;
+
     const tinygltf::Texture& tex = model->textures[texIndex];
 
     int samplerIndex = tex.sampler; // -1 の場合あり

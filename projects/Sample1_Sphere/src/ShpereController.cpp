@@ -15,21 +15,21 @@ void ShpereController::Update()
     Quaternion rot;
     if (Input::GetKey(Keyboard::A))
     {
-        rot = rot * Quaternion::AngleAxis(angleSpeed * Time::deltaTime, Vector3::up);
+        rot = rot * Quaternion::AngleAxis(-angleSpeed * Time::deltaTime, Vector3::up);
     }
     if (Input::GetKey(Keyboard::D))
     {
-        rot = rot * Quaternion::AngleAxis(-angleSpeed * Time::deltaTime, Vector3::up);
+        rot = rot * Quaternion::AngleAxis(angleSpeed * Time::deltaTime, Vector3::up);
     }
     if (Input::GetKey(Keyboard::W))
     {
-        rot = rot * Quaternion::AngleAxis(angleSpeed * Time::deltaTime, Vector3::right);
+        rot = rot * Quaternion::AngleAxis(-angleSpeed * Time::deltaTime, Vector3::right);
     }
     if (Input::GetKey(Keyboard::S))
     {
-        rot = rot * Quaternion::AngleAxis(-angleSpeed * Time::deltaTime, Vector3::right);
+        rot = rot * Quaternion::AngleAxis(angleSpeed * Time::deltaTime, Vector3::right);
     }
 
     // ƒ[ƒJƒ‹‚Ì•ûŒüQuaternion‚ÉæŽZ‚·‚é
-    transform->localRotation = transform->localRotation * rot;
+    transform->localRotation = rot * transform->localRotation;
 }

@@ -258,7 +258,6 @@ void Transform::updateMatrices() const
             * DirectX::SimpleMath::Matrix::CreateFromQuaternion(DirectX::XMFLOAT4(_localRotation))
             * DirectX::SimpleMath::Matrix::CreateTranslation(_localPosition);
         if (parent) {
-            parent->updateMatrices();
             m_worldMatrix = m_localMatrix * parent->m_worldMatrix;
         }
         else {
