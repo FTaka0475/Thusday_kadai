@@ -199,6 +199,7 @@
     <ClInclude Include="include\Player.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TimerController.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\CameraController.cpp" />
@@ -208,6 +209,7 @@
     <ClCompile Include="src\MainGame.cpp" />
     <ClCompile Include="src\MapData.cpp" />
     <ClCompile Include="src\Player.cpp" />
+    <ClCompile Include="TimerController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\resource\AlbedoShadeSpec.hlsl">
