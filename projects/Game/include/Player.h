@@ -21,4 +21,5 @@ public:
 
 private:
     float animFrame;
+    float nowCoin;
 };

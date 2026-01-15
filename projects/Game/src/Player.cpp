@@ -72,8 +72,11 @@ void Player::Update()
         rb->rotation = Quaternion::Euler(0, vAngle, 0);
     }
 
+    //タイムカウント
+    MainGame::getInstance()->AddTime(Time::deltaTime);
     // アニメ（未対応）
     animFrame += cont.magnitude();
+
 }
 
 

@@ -24,20 +24,20 @@ void CameraController::OnEnable()
 
 void CameraController::Update()
 {
-    const float angleSpeed = 90.0f;
-    if (Input::GetKey(Keyboard::J))
+    const float angleSpeed = 120.0f;
+    if (Input::GetKey(Keyboard::Left))
     {
         yaw += angleSpeed * Time::deltaTime;
     }
-    if (Input::GetKey(Keyboard::L))
+    if (Input::GetKey(Keyboard::Right))
     {
         yaw -= angleSpeed * Time::deltaTime;
     }
-    if (Input::GetKey(Keyboard::I))
+    if (Input::GetKey(Keyboard::Up))
     {
         pitch = std::min(pitch + angleSpeed * Time::deltaTime, 90.0f);
     }
-    if (Input::GetKey(Keyboard::K))
+    if (Input::GetKey(Keyboard::Down))
     {
         pitch = std::max(pitch - angleSpeed * Time::deltaTime, 0.0f);
     }

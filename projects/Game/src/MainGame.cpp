@@ -106,7 +106,7 @@ void MainGame::createMap()
                     j * -2 + float(MapData::getInstance()->getHeight() / 2) * 2
                 );
                 coin->transform->localScale = Vector3(3, 3, 3);
-
+                CoinCount++;
                 // コインの親をマップにする
                 Transform::SetParent(move(coin), map->transform);
             }
@@ -193,7 +193,7 @@ unique_ptr<UniDx::Scene> MainGame::CreateScene()
     font->Load(u8"resource/M PLUS 1.spritefont");
     auto textMesh = make_unique<TextMesh>();
     textMesh->font = font;
-    textMesh->text = u8"WASD:いどう\nIJKL:カメラ\nOP:ライト";
+    textMesh->text = u8"WASD:いどう\nArrowキー:カメラ\nOP:ライト";
 
     auto textObj = make_unique<GameObject>(u8"テキスト", textMesh);
     textObj->transform->localPosition = Vector3(100, 20, 0);
@@ -206,6 +206,14 @@ unique_ptr<UniDx::Scene> MainGame::CreateScene()
 
     auto scoreTextObj = make_unique<GameObject>(u8"スコア", scoreMesh);
     scoreTextObj->transform->localPosition = Vector3(480, 20, 0);
+
+    auto timeMesh = make_unique<TextMesh>();
+    timeMesh->font = font;
+    timeMesh->text = u8"0.0";
+    timeTextMesh = timeMesh.get();
+
+    auto timeTextObj = make_unique<GameObject>(u8"タイム", timeMesh);
+    timeTextObj->transform->localPosition = Vector3(780, 20, 0);
 
     auto canvas = make_unique<Canvas>();
     canvas->LoadDefaultMaterial(u8"resource");
@@ -231,10 +239,13 @@ unique_ptr<UniDx::Scene> MainGame::CreateScene()
         make_unique<GameObject>(u8"UI",
             move(canvas),
             move(textObj),
-            move(scoreTextObj)
+            move(scoreTextObj),
+            move(timeTextObj)
         )
     );
 }
+
+
 
 
 MainGame::~MainGame()
@@ -246,4 +257,19 @@ void MainGame::AddScore(int n)
 {
     score += n;
     scoreTextMesh->text = ToString(score);
+    if (CheckCoin(score))
+    {
+        
+    }
+}
+
+void MainGame::AddTime(float t)
+{
+    timer = t;
+    timeTextMesh->text = ToString((int)timer);
+}
+
+bool MainGame::CheckCoin(int c)
+{
+    return c >= MissionCoin;
 }
