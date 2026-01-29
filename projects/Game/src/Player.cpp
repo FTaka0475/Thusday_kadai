@@ -123,6 +123,7 @@ void Player::Update()
 
     // プログラムアニメ
     animFrame += cont.magnitude();
+
     for (int i = 0; i < bones.size(); ++i)
     {
         auto& bone = bones[i];
@@ -136,6 +137,17 @@ void Player::Update()
             sn * Range[i].z + Offset[i].z);
         bone->localRotation = r * initialRotate[i]; // 頂点×回転×初期姿勢
     }
+
+    if (cont == Vector3::zero)
+    {
+        for (int i = 0; i < bones.size(); ++i)
+        {
+            if (bones[i])
+                bones[i]->localRotation = initialRotate[i];
+        }
+        return;
+    }
+
 
 }
 
