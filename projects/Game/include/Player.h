@@ -20,6 +20,7 @@ public:
     UniDx::Rigidbody* rb = nullptr;
 
 private:
+    std::vector<UniDx::Transform*> bones;
+    std::vector<UniDx::Quaternion> initialRotate;
     float animFrame;
-    float nowCoin;
 };

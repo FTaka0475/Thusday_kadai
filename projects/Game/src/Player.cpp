@@ -5,6 +5,7 @@
 #include <UniDx/Input.h>
 #include <UniDx/Collider.h>
 #include <UniDx/Time.h>
+#include <UniDx/PrimitiveRenderer.h>
 
 #include "MainGame.h"
 
@@ -13,6 +14,38 @@ using namespace UniDx;
 
 namespace
 {
+
+    const StringId CoinName = StringId::intern("Coin");
+
+    // アニメショーンさせるボーン名
+    const StringId BoneName[] =
+    {
+        StringId::intern("LeftUpperArm"),
+        StringId::intern("RightUpperArm"),
+        StringId::intern("LeftUpperLeg"),
+        StringId::intern("RightUpperLeg"),
+        StringId::intern("Tail")
+    };
+    // アニメーションさせる角度の範囲（pitch, yaw, roll）
+    const Vector3 Range[] =
+    {
+        Vector3(80,  0,  0),
+        Vector3(-80,  0,  0),
+        Vector3(30,  0, 45),
+        Vector3(-30,  0, 45),
+        Vector3(30,  0,  0),
+    };
+    // アニメーションさせる角度のオフセット（pitch, yaw, roll）
+    const Vector3 Offset[] =
+    {
+        Vector3(0,  0, 30),
+        Vector3(0,  0,-30),
+        Vector3(0,  5,  0),
+        Vector3(0, -5,  0),
+        Vector3(20,  0,  0),
+    };
+    constexpr size_t BoneMax = sizeof(BoneName) / sizeof(StringId);
+    constexpr float animSpeed = 0.05f;
 }
 
 
@@ -22,14 +55,27 @@ void Player::OnEnable()
     assert(rb != nullptr);
 
     rb->gravityScale = 1.5f;
-    animFrame = 0.0f;
     GetComponent<Collider>(true)->bounciness = 0.0f;
+
+    bones.resize(BoneMax, nullptr);
+    initialRotate.resize(BoneMax);
+    for (int i = 0; i < BoneMax; ++i)
+    {
+        GameObject* o = gameObject->Find([i](GameObject* p) { return p->name == BoneName[i]; });
+        if (o != nullptr)
+        {
+            bones[i] = o->transform;
+            initialRotate[i] = o->transform->localRotation;
+        }
+    }
+
+    animFrame = 0.0f;
 }
 
 
 void Player::Update()
 {
-    const float moveSpeed = 4;
+    const float moveSpeed = 5;
 
     // 操作方向
     Vector3 cont;
@@ -74,8 +120,22 @@ void Player::Update()
 
     //タイムカウント
     MainGame::getInstance()->AddTime(Time::deltaTime);
-    // アニメ（未対応）
+
+    // プログラムアニメ
     animFrame += cont.magnitude();
+    for (int i = 0; i < bones.size(); ++i)
+    {
+        auto& bone = bones[i];
+        if (bone == nullptr) continue;
+
+        Quaternion r = bone->localRotation;
+        float sn = std::sin(animFrame * animSpeed);
+        r = Quaternion::Euler(
+            sn * Range[i].x + Offset[i].x,
+            sn * Range[i].y + Offset[i].y,
+            sn * Range[i].z + Offset[i].z);
+        bone->localRotation = r * initialRotate[i]; // 頂点×回転×初期姿勢
+    }
 
 }
 
@@ -97,7 +157,7 @@ void Player::OnTriggerExit(Collider* other)
 
 void Player::OnCollisionEnter(const Collision& collision)
 {
-    if (collision.collider->name == StringId::intern("Coin"))
+    if (collision.collider->name == CoinName)
     {
         MainGame::getInstance()->AddScore(1);
         Destroy(collision.collider->gameObject);
