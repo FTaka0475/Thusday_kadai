@@ -27,7 +27,8 @@ protected:
     int score = 0;
     float timer = 0.0f;
     int CoinCount = 0;
-    int MissionCoin = 10;
+    int MissionCoin = 8;
+    bool ifcount = false;
     unique_ptr<UniDx::GameObject> mapObj;
     UniDx::TextMesh* scoreTextMesh;
     UniDx::TextMesh* timeTextMesh;

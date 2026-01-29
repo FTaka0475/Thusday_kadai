@@ -259,13 +259,14 @@ void MainGame::AddScore(int n)
     scoreTextMesh->text = ToString(score);
     if (CheckCoin(score))
     {
-        
+        ifcount = true;
     }
 }
 
 void MainGame::AddTime(float t)
 {
-    timer = t;
+    if (ifcount)return;
+    timer += t;
     timeTextMesh->text = ToString((int)timer);
 }
 
